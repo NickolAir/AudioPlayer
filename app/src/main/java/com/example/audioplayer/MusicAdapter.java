@@ -1,5 +1,6 @@
 package com.example.audioplayer;
 
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -45,6 +46,13 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicHolder>
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                Intent intent = new Intent(holder.itemView.getContext(), PlayerActivity.class);
+                intent.putExtra("title", music.getTitle());
+                intent.putExtra("album", music.getAlbum());
+                intent.putExtra("artist", music.getArtist());
+                intent.putExtra("path", music.getPath());
+                intent.putExtra("duration", music.getDuration());
+                holder.itemView.getContext().startActivity(intent);
 
             }
         });

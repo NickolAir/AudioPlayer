@@ -70,7 +70,7 @@ public class MainActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        if (grantResults.length > 0) {
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             loadPlaylist();
         }
     }
@@ -97,10 +97,12 @@ public class MainActivity extends AppCompatActivity {
                         loadFav();
                         break;
                     case R.id.nav_create:
-
+//                        PartyServer partyServer = new PartyServer();
+//                        partyServer.run();
                         break;
                     case R.id.nav_join:
-
+//                        PartyClient partyClient = new PartyClient();
+//                        partyClient.run();
                         break;
                 }
                 return false;
