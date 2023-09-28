@@ -7,10 +7,10 @@
     tools:context=".MainActivity">
 
     <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_songs"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        tools:listitem="@layout/item_song"
-        android:id="@+id/recycler_songs"/>
+        tools:listitem="@layout/item_song" />
 
 </RelativeLayout>

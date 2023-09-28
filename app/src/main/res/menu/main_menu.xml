@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="nav_songs"
+    <item android:id="@+id/nav_songs"
         android:title="All songs"
         android:icon="@drawable/ic_all_songs"/>
 
-    <item android:id="fav"
+    <item android:id="@+id/nav_fav"
         android:title="Favorite"
         android:icon="@drawable/ic_favorite"/>
 
-    <item android:id="join"
+    <item android:id="@+id/nav_join"
         android:title="Join party"
         android:icon="@drawable/ic_join_party"/>
 
-    <item android:id="create"
+    <item android:id="@+id/nav_create"
         android:title="Create party"
         android:icon="@drawable/ic_create_party"/>
 </menu>
