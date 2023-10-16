@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.drm.DrmStore;
 import android.os.AsyncTask;
@@ -97,12 +98,14 @@ public class MainActivity extends AppCompatActivity {
                         loadFav();
                         break;
                     case R.id.nav_create:
-//                        PartyServer partyServer = new PartyServer();
-//                        partyServer.run();
+                        Intent intentCreate = new Intent(MainActivity.this, PartyServer.class);
+                        //intentCreate.putExtra("playlist", list);
+                        startActivity(intentCreate);
                         break;
                     case R.id.nav_join:
-//                        PartyClient partyClient = new PartyClient();
-//                        partyClient.run();
+                        Intent intentJoin = new Intent(MainActivity.this, PartyClient.class);
+                        //intentJoin.putExtra("playlist", list);
+                        startActivity(intentJoin);
                         break;
                 }
                 return false;

@@ -2,16 +2,26 @@ package com.example.audioplayer;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.media.AudioAttributes;
+import android.media.MediaPlayer;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class PlayerActivity extends AppCompatActivity {
 
     String musicPath, musicAlbum, musicArtist, musicDuration, musicTitle;
-    ImageView prev, play, next;
+    ImageView prev, play, next, btnReturn;
     TextView title;
+    MediaPlayer mediaPlayer;
+    List<Music> playlist = new ArrayList<>();
+    MusicAdapter musicAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,19 +39,16 @@ public class PlayerActivity extends AppCompatActivity {
         play = findViewById(R.id.pause_play);
         next = findViewById(R.id.next);
         title = findViewById(R.id.song_title);
+        btnReturn = findViewById(R.id.back_arrow);
+
+        initMusic();
+
         title.setText(musicTitle);
 
         prev.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 pressPrev();
-            }
-        });
-
-        play.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                pressPlay();
             }
         });
 
@@ -52,6 +59,45 @@ public class PlayerActivity extends AppCompatActivity {
             }
         });
 
+        play.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                onBackPressed();
+            }
+        });
+
+        musicAdapter = new MusicAdapter(playlist);
+        loadMusic();
+    }
+
+    private void loadMusic() {
+        playlist.clear();
+        musicAdapter.notifyDataSetChanged();
+        playlist.addAll(Helper.allMusic);
+        musicAdapter.notifyDataSetChanged();
+    }
+
+    private void initMusic() {
+        mediaPlayer = new MediaPlayer();
+        mediaPlayer.setAudioAttributes(new AudioAttributes.Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .build());
+        try {
+            mediaPlayer.setDataSource(musicPath);
+            mediaPlayer.prepareAsync();
+
+        } catch (Exception e){
+            Toast.makeText(this, "Error music can't play", Toast.LENGTH_SHORT).show();
+        }
+
+        mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+            @Override
+            public void onPrepared(MediaPlayer mediaPlayer) {
+                play.setImageResource(R.drawable.ic_baseline_pause_circle_outline_24);
+                mediaPlayer.start();
+            }
+        });
     }
 
     private void pressNext() {
@@ -62,7 +108,12 @@ public class PlayerActivity extends AppCompatActivity {
 
     }
 
-    private void pressPlay() {
-
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (mediaPlayer != null) {
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
     }
 }

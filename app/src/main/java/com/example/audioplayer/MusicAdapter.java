@@ -1,6 +1,7 @@
 package com.example.audioplayer;
 
 import android.content.Intent;
+import android.os.Parcelable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,11 +14,13 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicHolder> {
 
     List<Music> list;
+    private int currentPosition = -1;
 
     public MusicAdapter(List<Music> list) {
         this.list = list;
@@ -53,7 +56,6 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicHolder>
                 intent.putExtra("path", music.getPath());
                 intent.putExtra("duration", music.getDuration());
                 holder.itemView.getContext().startActivity(intent);
-
             }
         });
     }
@@ -74,5 +76,9 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicHolder>
             title = itemView.findViewById(R.id.item_title);
             duration = itemView.findViewById(R.id.item_duration);
         }
+    }
+
+    private int getCurrentPosition() {
+        return currentPosition;
     }
 }

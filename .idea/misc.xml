@@ -3,17 +3,13 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
-        <entry key="..\:/Users/Nikolay/AndroidStudioProjects/AudioPlayer/app/src/main/res/drawable-v24/ic_baseline_pause_circle_outline_24.xml" value="0.149" />
-        <entry key="..\:/Users/Nikolay/AndroidStudioProjects/AudioPlayer/app/src/main/res/drawable/ic_all_songs.xml" value="0.149" />
-        <entry key="..\:/Users/Nikolay/AndroidStudioProjects/AudioPlayer/app/src/main/res/drawable/ic_back.xml" value="0.149" />
-        <entry key="..\:/Users/Nikolay/AndroidStudioProjects/AudioPlayer/app/src/main/res/drawable/ic_baseline_connect_without_contact_24.xml" value="0.149" />
-        <entry key="..\:/Users/Nikolay/AndroidStudioProjects/AudioPlayer/app/src/main/res/drawable/main_menu.xml" value="0.149" />
-        <entry key="..\:/Users/Nikolay/AndroidStudioProjects/AudioPlayer/app/src/main/res/layout/activity_main.xml" value="0.25416666666666665" />
-        <entry key="..\:/Users/Nikolay/AndroidStudioProjects/AudioPlayer/app/src/main/res/layout/activity_main_drawer.xml" value="0.25416666666666665" />
-        <entry key="..\:/Users/Nikolay/AndroidStudioProjects/AudioPlayer/app/src/main/res/layout/activity_player.xml" value="0.25416666666666665" />
-        <entry key="..\:/Users/Nikolay/AndroidStudioProjects/AudioPlayer/app/src/main/res/layout/item_song.xml" value="0.45569620253164556" />
-        <entry key="..\:/Users/Nikolay/AndroidStudioProjects/AudioPlayer/app/src/main/res/layout/nav_header.xml" value="0.2" />
-        <entry key="..\:/Users/Nikolay/AndroidStudioProjects/AudioPlayer/app/src/main/res/menu/main_menu.xml" value="0.25416666666666665" />
+        <entry key="app/src/main/res/drawable-v24/ic_baseline_play_circle_outline_24.xml" value="0.2145" />
+        <entry key="app/src/main/res/layout/activity_client.xml" value="0.20652173913043478" />
+        <entry key="app/src/main/res/layout/activity_main.xml" value="0.20652173913043478" />
+        <entry key="app/src/main/res/layout/activity_main_drawer.xml" value="0.20652173913043478" />
+        <entry key="app/src/main/res/layout/activity_player.xml" value="0.20652173913043478" />
+        <entry key="app/src/main/res/layout/activity_server.xml" value="0.20652173913043478" />
+        <entry key="app/src/main/res/menu/main_menu.xml" value="0.30520833333333336" />
       </map>
     </option>
   </component>
