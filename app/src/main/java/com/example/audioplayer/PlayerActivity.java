@@ -22,6 +22,7 @@ public class PlayerActivity extends AppCompatActivity {
     MediaPlayer mediaPlayer;
     List<Music> playlist = new ArrayList<>();
     MusicAdapter musicAdapter;
+    int currentTrackIndex;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,6 +35,7 @@ public class PlayerActivity extends AppCompatActivity {
         musicArtist = bundle.getString("artist");
         musicDuration = bundle.getString("duration");
         musicPath = bundle.getString("path");
+        currentTrackIndex = bundle.getInt("position");
 
         prev = findViewById(R.id.previous);
         play = findViewById(R.id.pause_play);
@@ -41,7 +43,7 @@ public class PlayerActivity extends AppCompatActivity {
         title = findViewById(R.id.song_title);
         btnReturn = findViewById(R.id.back_arrow);
 
-        initMusic();
+        initMusic(currentTrackIndex, musicPath);
 
         title.setText(musicTitle);
 
@@ -62,6 +64,15 @@ public class PlayerActivity extends AppCompatActivity {
         play.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                onPause();
+            }
+        });
+
+        btnReturn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mediaPlayer.release();
+                mediaPlayer = null;
                 onBackPressed();
             }
         });
@@ -77,18 +88,17 @@ public class PlayerActivity extends AppCompatActivity {
         musicAdapter.notifyDataSetChanged();
     }
 
-    private void initMusic() {
+    private void initMusic(int position, String path) {
         mediaPlayer = new MediaPlayer();
         mediaPlayer.setAudioAttributes(new AudioAttributes.Builder()
                 .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                 .setUsage(AudioAttributes.USAGE_MEDIA)
                 .build());
         try {
-            mediaPlayer.setDataSource(musicPath);
+            mediaPlayer.setDataSource(path);
             mediaPlayer.prepareAsync();
-
         } catch (Exception e){
-            Toast.makeText(this, "Error music can't play", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Error, music can't play", Toast.LENGTH_SHORT).show();
         }
 
         mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
@@ -101,19 +111,42 @@ public class PlayerActivity extends AppCompatActivity {
     }
 
     private void pressNext() {
-
+        if (currentTrackIndex < playlist.size() - 1) {
+            currentTrackIndex++;
+        } else {
+            currentTrackIndex = 0;
+        }
+        if (mediaPlayer.isPlaying()) {
+            mediaPlayer.stop();
+        }
+        initMusic(currentTrackIndex, playlist.get(currentTrackIndex).path);
+        title.setText(playlist.get(currentTrackIndex).title);
     }
 
     private void pressPrev() {
-
+        if (currentTrackIndex > 0) {
+            currentTrackIndex--;
+        } else {
+            currentTrackIndex = playlist.size() - 1;
+        }
+        if (mediaPlayer.isPlaying()) {
+            mediaPlayer.stop();
+        }
+        initMusic(currentTrackIndex, playlist.get(currentTrackIndex).path);
+        title.setText(playlist.get(currentTrackIndex).title);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         if (mediaPlayer != null) {
-            mediaPlayer.release();
-            mediaPlayer = null;
+            if (mediaPlayer.isPlaying()) {
+                mediaPlayer.pause();
+                play.setImageResource(R.drawable.ic_baseline_play_circle_outline_24);
+            } else {
+                mediaPlayer.start();
+                play.setImageResource(R.drawable.ic_baseline_pause_circle_outline_24);
+            }
         }
     }
 }

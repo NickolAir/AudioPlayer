@@ -20,7 +20,6 @@ import java.util.List;
 public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicHolder> {
 
     List<Music> list;
-    private int currentPosition = -1;
 
     public MusicAdapter(List<Music> list) {
         this.list = list;
@@ -55,6 +54,7 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicHolder>
                 intent.putExtra("artist", music.getArtist());
                 intent.putExtra("path", music.getPath());
                 intent.putExtra("duration", music.getDuration());
+                intent.putExtra("position", music.getPosition());
                 holder.itemView.getContext().startActivity(intent);
             }
         });
@@ -76,9 +76,5 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicHolder>
             title = itemView.findViewById(R.id.item_title);
             duration = itemView.findViewById(R.id.item_duration);
         }
-    }
-
-    private int getCurrentPosition() {
-        return currentPosition;
     }
 }

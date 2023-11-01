@@ -99,12 +99,10 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     case R.id.nav_create:
                         Intent intentCreate = new Intent(MainActivity.this, PartyServer.class);
-                        //intentCreate.putExtra("playlist", list);
                         startActivity(intentCreate);
                         break;
                     case R.id.nav_join:
                         Intent intentJoin = new Intent(MainActivity.this, PartyClient.class);
-                        //intentJoin.putExtra("playlist", list);
                         startActivity(intentJoin);
                         break;
                 }

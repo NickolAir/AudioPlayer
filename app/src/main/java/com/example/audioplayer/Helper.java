@@ -18,6 +18,8 @@ public class Helper {
                 MediaStore.Audio.Media.ARTIST};
         Cursor cr = context.getContentResolver().query(uri, data, null, null, null);
 
+        int position = 0;
+
         if (cr != null) {
             while (cr.moveToNext()) {
                 String path = cr.getString(0);
@@ -26,7 +28,9 @@ public class Helper {
                 String artist = cr.getString(2);
                 String time = "";
 
-                tempList.add(new Music(title, artist, album, path, time));
+                tempList.add(new Music(title, artist, album, path, time, position));
+
+                position++;
             }
             cr.close();
             Helper.allMusic.addAll(tempList);
