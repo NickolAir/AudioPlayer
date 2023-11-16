@@ -1,40 +1,36 @@
 package com.example.audioplayer;
 
-import android.graphics.Color;
+import android.content.Context;
+import android.net.nsd.NsdManager;
+import android.net.nsd.NsdServiceInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketException;
+import java.io.*;
+import java.net.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Enumeration;
 
 public class PartyServer extends AppCompatActivity implements View.OnClickListener {
 
+    private static final String SERVICE_TYPE = "_http._tcp.";
+    private NsdManager nsdManager;
+    private NsdManager.ResolveListener resolveListener;
+    private NsdServiceInfo discoveredService;
     private ServerSocket serverSocket;
     private Socket tempClientSocket;
-    Thread serverThread = null;
+    private Thread serverThread = null;
     public static final int SERVER_PORT = 7777;
     private LinearLayout msgList;
     private Handler handler;
-    private int greenColor = 100;
     private EditText edMessage;
 
     @Override
@@ -42,42 +38,70 @@ public class PartyServer extends AppCompatActivity implements View.OnClickListen
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_server);
         setTitle("Server");
+
         handler = new Handler();
         msgList = findViewById(R.id.msgList);
         edMessage = findViewById(R.id.edMessage);
 
-        TextView ipAddressTextView = findViewById(R.id.ipAddressTextView);
+        nsdManager = (NsdManager) getSystemService(Context.NSD_SERVICE);
 
-        String ipAddress = getDeviceIPAddress();
-
-        ipAddressTextView.setText("IP-адрес устройства: " + ipAddress);
+        //initializeServerSocket();
+        registerService();
     }
 
-    private String getDeviceIPAddress() {
+    private void initializeServerSocket() {
         try {
-            Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
-            while (networkInterfaces.hasMoreElements()) {
-                NetworkInterface networkInterface = networkInterfaces.nextElement();
-                Enumeration<InetAddress> addresses = networkInterface.getInetAddresses();
-                while (addresses.hasMoreElements()) {
-                    InetAddress address = addresses.nextElement();
-                    if (!address.isLoopbackAddress() && !address.isLinkLocalAddress()) {
-                        return address.getHostAddress();
-                    }
-                }
-            }
-        } catch (SocketException e) {
+            serverSocket = new ServerSocket(SERVER_PORT);
+        } catch (IOException e) {
             e.printStackTrace();
         }
-        return "Не получилось получить ip адрес";
     }
 
-    public TextView textView(String message) {
-        if (null == message || message.trim().isEmpty()) {
+    private void registerService() {
+        NsdServiceInfo serviceInfo = new NsdServiceInfo();
+        serviceInfo.setServiceType(SERVICE_TYPE);
+        serviceInfo.setServiceName("Server");
+        serviceInfo.setPort(SERVER_PORT);
+
+        nsdManager.registerService(
+                serviceInfo,
+                NsdManager.PROTOCOL_DNS_SD,
+                new NsdManager.RegistrationListener() {
+                    @Override
+                    public void onServiceRegistered(NsdServiceInfo serviceInfo) {
+                        // Обработка успешной регистрации сервиса
+                        Toast.makeText(PartyServer.this, "Server registered: " + serviceInfo.getServiceName(), Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onRegistrationFailed(NsdServiceInfo serviceInfo, int errorCode) {
+                        // Обработка ошибки при регистрации сервиса
+                        Toast.makeText(PartyServer.this, "Registration failed for service: " + serviceInfo.getServiceName() +
+                                " with error code: " + errorCode, Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onServiceUnregistered(NsdServiceInfo serviceInfo) {
+                        // Обработка успешного завершения регистрации сервиса
+                        Toast.makeText(PartyServer.this, "Server unregistered: " + serviceInfo.getServiceName(), Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onUnregistrationFailed(NsdServiceInfo serviceInfo, int errorCode) {
+                        // Обработка ошибки при завершении регистрации сервиса
+                        Toast.makeText(PartyServer.this, "Unregistration failed for service: " + serviceInfo.getServiceName() +
+                                " with error code: " + errorCode, Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    public TextView createTextView(String message) {
+        if (message == null || message.trim().isEmpty()) {
             message = "<Empty Message>";
         }
+
         TextView tv = new TextView(this);
-        tv.setText(message + " [" + getTime() +"]");
+        tv.setText(message + " [" + getTime() + "]");
         tv.setTextSize(20);
         tv.setPadding(0, 5, 0, 0);
         return tv;
@@ -87,7 +111,7 @@ public class PartyServer extends AppCompatActivity implements View.OnClickListen
         handler.post(new Runnable() {
             @Override
             public void run() {
-                msgList.addView(textView(message));
+                msgList.addView(createTextView(message));
             }
         });
     }
@@ -96,33 +120,30 @@ public class PartyServer extends AppCompatActivity implements View.OnClickListen
     public void onClick(View view) {
         if (view.getId() == R.id.start_server) {
             msgList.removeAllViews();
-            showMessage("Server Started.", Color.BLUE);
-            this.serverThread = new Thread(new ServerThread());
-            this.serverThread.start();
-            return;
-        }
-        if (view.getId() == R.id.send_data) {
+            showMessage("Server Started.", getColor(R.color.black));
+            serverThread = new Thread(new ServerThread());
+            serverThread.start();
+        } else if (view.getId() == R.id.send_data) {
             String msg = edMessage.getText().toString().trim();
-            showMessage("Server : " + msg, Color.BLUE);
+            showMessage("Server : " + msg, getColor(R.color.black));
             sendMessage(msg);
         }
     }
 
     private void sendMessage(final String message) {
         try {
-            if (null != tempClientSocket) {
+            if (tempClientSocket != null) {
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        PrintWriter out = null;
                         try {
-                            out = new PrintWriter(new BufferedWriter(
+                            PrintWriter out = new PrintWriter(new BufferedWriter(
                                     new OutputStreamWriter(tempClientSocket.getOutputStream())),
                                     true);
+                            out.println(message);
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
-                        out.println(message);
                     }
                 }).start();
             }
@@ -140,9 +161,10 @@ public class PartyServer extends AppCompatActivity implements View.OnClickListen
                 findViewById(R.id.start_server).setVisibility(View.GONE);
             } catch (IOException e) {
                 e.printStackTrace();
-                showMessage("Error Starting Server : " + e.getMessage(), Color.RED);
+                showMessage("Error Starting Server : " + e.getMessage(), getColor(R.color.red));
             }
-            if (null != serverSocket) {
+
+            if (serverSocket != null) {
                 while (!Thread.currentThread().isInterrupted()) {
                     try {
                         socket = serverSocket.accept();
@@ -150,7 +172,7 @@ public class PartyServer extends AppCompatActivity implements View.OnClickListen
                         new Thread(commThread).start();
                     } catch (IOException e) {
                         e.printStackTrace();
-                        showMessage("Error Communicating to Client :" + e.getMessage(), Color.RED);
+                        showMessage("Error Communicating to Client : " + e.getMessage(), getColor(R.color.red));
                     }
                 }
             }
@@ -160,7 +182,6 @@ public class PartyServer extends AppCompatActivity implements View.OnClickListen
     class CommunicationThread implements Runnable {
 
         private Socket clientSocket;
-
         private BufferedReader input;
 
         public CommunicationThread(Socket clientSocket) {
@@ -170,30 +191,27 @@ public class PartyServer extends AppCompatActivity implements View.OnClickListen
                 this.input = new BufferedReader(new InputStreamReader(this.clientSocket.getInputStream()));
             } catch (IOException e) {
                 e.printStackTrace();
-                showMessage("Error Connecting to Client!!", Color.RED);
+                showMessage("Error Connecting to Client!!", getColor(R.color.red));
             }
-            showMessage("Connected to Client!!", greenColor);
+            showMessage("Connected to Client!!", getColor(R.color.black));
         }
 
         public void run() {
-
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     String read = input.readLine();
-                    if (null == read || "Disconnect".contentEquals(read)) {
+                    if (read == null || "Disconnect".contentEquals(read)) {
                         Thread.interrupted();
                         read = "Client Disconnected";
-                        showMessage("Client : " + read, greenColor);
+                        showMessage("Client : " + read, getColor(R.color.black));
                         break;
                     }
-                    showMessage("Client : " + read, greenColor);
+                    showMessage("Client : " + read, getColor(R.color.black));
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-
             }
         }
-
     }
 
     String getTime() {
@@ -204,10 +222,11 @@ public class PartyServer extends AppCompatActivity implements View.OnClickListen
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (null != serverThread) {
+        if (serverThread != null) {
             sendMessage("Disconnect");
             serverThread.interrupt();
             serverThread = null;
         }
+        nsdManager.unregisterService(null);
     }
 }
