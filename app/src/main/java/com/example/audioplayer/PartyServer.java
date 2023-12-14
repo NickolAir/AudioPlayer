@@ -16,15 +16,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import java.io.*;
 import java.net.*;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.List;
 
 public class PartyServer extends AppCompatActivity implements View.OnClickListener {
 
     private static final String SERVICE_TYPE = "_http._tcp.";
     private NsdManager nsdManager;
-    private NsdManager.ResolveListener resolveListener;
-    private NsdServiceInfo discoveredService;
     private ServerSocket serverSocket;
     private Socket tempClientSocket;
     private Thread serverThread = null;
@@ -32,6 +32,9 @@ public class PartyServer extends AppCompatActivity implements View.OnClickListen
     private LinearLayout msgList;
     private Handler handler;
     private EditText edMessage;
+
+    List<Music> playlist = new ArrayList<>();
+    MusicAdapter musicAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +50,16 @@ public class PartyServer extends AppCompatActivity implements View.OnClickListen
 
         //initializeServerSocket();
         registerService();
+
+        musicAdapter = new MusicAdapter(playlist);
+        loadMusic();
+    }
+
+    private void loadMusic() {
+        playlist.clear();
+        musicAdapter.notifyDataSetChanged();
+        playlist.addAll(Helper.allMusic);
+        musicAdapter.notifyDataSetChanged();
     }
 
     private void initializeServerSocket() {
@@ -158,7 +171,7 @@ public class PartyServer extends AppCompatActivity implements View.OnClickListen
             Socket socket;
             try {
                 serverSocket = new ServerSocket(SERVER_PORT);
-                findViewById(R.id.start_server).setVisibility(View.GONE);
+                findViewById(R.id.start_server);
             } catch (IOException e) {
                 e.printStackTrace();
                 showMessage("Error Starting Server : " + e.getMessage(), getColor(R.color.red));
@@ -227,6 +240,6 @@ public class PartyServer extends AppCompatActivity implements View.OnClickListen
             serverThread.interrupt();
             serverThread = null;
         }
-        nsdManager.unregisterService(null);
+        //nsdManager.unregisterService(null);
     }
 }

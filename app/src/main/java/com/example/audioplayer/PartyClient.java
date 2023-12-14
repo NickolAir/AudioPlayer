@@ -24,22 +24,30 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class PartyClient extends AppCompatActivity implements View.OnClickListener {
 
     public static final int SERVERPORT = 7777;
 
     private static final String SERVICE_TYPE = "_http._tcp.";
+    private NsdDiscovery nsdDiscovery;
     private NsdManager nsdManager;
     private NsdManager.ResolveListener resolveListener;
     private NsdServiceInfo discoveredService;
+    private NsdManager.DiscoveryListener discoveryListener;
+
     private String SERVER_IP;
     private ClientThread clientThread;
     private Thread thread;
     private LinearLayout msgList;
     private Handler handler;
     private EditText edMessage;
+
+    List<Music> playlist = new ArrayList<>();
+    MusicAdapter musicAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,62 +61,100 @@ public class PartyClient extends AppCompatActivity implements View.OnClickListen
 
         nsdManager = (NsdManager) getSystemService(Context.NSD_SERVICE);
 
+        resolveListener = new NsdManager.ResolveListener() {
+            @Override
+            public void onResolveFailed(NsdServiceInfo serviceInfo, int errorCode) {
+                System.out.println("Resolve failed for service: " + serviceInfo.getServiceName() +
+                        " with error code: " + errorCode);
+            }
+
+            @Override
+            public void onServiceResolved(NsdServiceInfo serviceInfo) {
+                // Обработка успешного разрешения (определения адреса) сервиса
+                SERVER_IP = nsdDiscovery.getIP();
+                System.out.println("SERVER IP " + SERVER_IP);
+                System.out.println("Service resolved: " + serviceInfo.getServiceName());
+                discoveredService = serviceInfo;
+                connectToServer();
+            }
+        };
+
+        musicAdapter = new MusicAdapter(playlist);
+        loadMusic();
+    }
+
+    private void loadMusic() {
+        playlist.clear();
+        musicAdapter.notifyDataSetChanged();
+        playlist.addAll(Helper.allMusic);
+        musicAdapter.notifyDataSetChanged();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (discoveredService != null) {
+            nsdManager.stopServiceDiscovery(discoveryListener);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
         discoverServer();
     }
 
     private void discoverServer() {
-        NsdServiceInfo serviceInfo = new NsdServiceInfo();
-        serviceInfo.setServiceType(SERVICE_TYPE);
-        serviceInfo.setServiceName("Server");
+        NsdManager.DiscoveryListener discoveryListener = new NsdManager.DiscoveryListener() {
+            @Override
+            public void onStartDiscoveryFailed(String serviceType, int errorCode) {
+                // Обработка ошибки при начале обнаружения сервисов
+                Toast.makeText(PartyClient.this, "Start discovery failed with error code: " + errorCode, Toast.LENGTH_SHORT).show();
+            }
 
-        nsdManager.discoverServices(
-                serviceInfo.getServiceType(),
-                NsdManager.PROTOCOL_DNS_SD,
-                new NsdManager.DiscoveryListener() {
-                    @Override
-                    public void onDiscoveryStarted(String serviceType) {
-                        Log.d("NsdDiscovery", "Discovery started");
-                    }
+            @Override
+            public void onStopDiscoveryFailed(String serviceType, int errorCode) {
+                // Обработка ошибки при завершении обнаружения сервисов
+                Toast.makeText(PartyClient.this, "Stop discovery failed with error code: " + errorCode, Toast.LENGTH_SHORT).show();
+            }
 
-                    @Override
-                    public void onServiceFound(NsdServiceInfo serviceInfo) {
-                        // Обработка обнаруженного сервиса
-                        if (serviceInfo.getServiceName().equals("MyServer")) {
-                            // Нашли нужный сервер
-                            SERVER_IP = serviceInfo.getHost().getHostAddress();
-                            // IP-адрес сервера
-                            Toast.makeText(PartyClient.this, "Server found at " + SERVER_IP, Toast.LENGTH_LONG).show();
+            @Override
+            public void onDiscoveryStarted(String serviceType) {
+                // Обработка начала обнаружения сервисов
+                Toast.makeText(PartyClient.this, "Discovery started for service type: " + serviceType, Toast.LENGTH_SHORT).show();
+            }
 
-                            // connectToServer(serverIp);
-                        }
-                    }
+            @Override
+            public void onDiscoveryStopped(String serviceType) {
+                // Обработка завершения обнаружения сервисов
+                Toast.makeText(PartyClient.this, "Discovery stopped for service type: " + serviceType, Toast.LENGTH_SHORT).show();
+            }
 
-                    @Override
-                    public void onServiceLost(NsdServiceInfo nsdServiceInfo) {
-                        // Обработка потери сервиса
-                        Toast.makeText(PartyClient.this, "Service Lost: " + nsdServiceInfo.getServiceName(), Toast.LENGTH_SHORT).show();
-                    }
+            @Override
+            public void onServiceFound(NsdServiceInfo serviceInfo) {
+                // Обработка обнаруженного сервиса
+                if (serviceInfo.getServiceType().equals(SERVICE_TYPE)) {
+                    nsdManager.resolveService(serviceInfo, resolveListener);
+                }
+            }
 
-                    @Override
-                    public void onDiscoveryStopped(String serviceType) {
-                        // Обработка завершения обнаружения сервисов
-                        Toast.makeText(PartyClient.this, "Discovery stopped for service type: " + serviceType, Toast.LENGTH_SHORT).show();
-                    }
+            @Override
+            public void onServiceLost(NsdServiceInfo serviceInfo) {
+                // Обработка потери сервиса
+                Toast.makeText(PartyClient.this, "Service lost: " + serviceInfo.getServiceName(), Toast.LENGTH_SHORT).show();
+            }
+        };
 
-                    @Override
-                    public void onStartDiscoveryFailed(String serviceType, int errorCode) {
-                        // Обработка ошибки при начале обнаружения сервисов
-                        Toast.makeText(PartyClient.this, "Discovery start failed for service type: " + serviceType +
-                                " with error code: " + errorCode, Toast.LENGTH_SHORT).show();
-                    }
+        nsdManager.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, discoveryListener);
+    }
 
-                    @Override
-                    public void onStopDiscoveryFailed(String serviceType, int errorCode) {
-                        // Обработка ошибки при завершении обнаружения сервисов
-                        Toast.makeText(PartyClient.this, "Discovery stop failed for service type: " + serviceType +
-                                " with error code: " + errorCode, Toast.LENGTH_SHORT).show();
-                    }
-                });
+    private void connectToServer() {
+        if (discoveredService != null) {
+            msgList.removeAllViews();
+            clientThread = new ClientThread();
+            thread = new Thread(clientThread);
+            thread.start();
+        }
     }
 
     public TextView createTextView(String message) {
@@ -136,12 +182,15 @@ public class PartyClient extends AppCompatActivity implements View.OnClickListen
     @Override
     public void onClick(View view) {
         if (view.getId() == R.id.connect_server) {
+            nsdDiscovery = new NsdDiscovery(this);
+            nsdDiscovery.startDiscovery();
+
             msgList.removeAllViews();
             showMessage("Connecting to Server...");
             clientThread = new ClientThread();
             thread = new Thread(clientThread);
             thread.start();
-            showMessage("Connected to Server...");
+            //System.out.println(nsdDiscovery.getIP());
         } else if (view.getId() == R.id.send_data) {
             String clientMessage = edMessage.getText().toString().trim();
             showMessage(clientMessage);
@@ -159,7 +208,8 @@ public class PartyClient extends AppCompatActivity implements View.OnClickListen
         @Override
         public void run() {
             try {
-                InetAddress serverAddr = InetAddress.getByName(SERVER_IP);
+                InetAddress serverAddr = InetAddress.getByName(SERVER_IP); //null!!!!!!!!!
+                System.out.println(serverAddr);
                 socket = new Socket(serverAddr, SERVERPORT);
 
                 while (!Thread.currentThread().isInterrupted()) {
@@ -212,6 +262,6 @@ public class PartyClient extends AppCompatActivity implements View.OnClickListen
             clientThread.sendMessage("Disconnect");
             clientThread = null;
         }
-        nsdManager.stopServiceDiscovery(null);
+        //nsdManager.stopServiceDiscovery(null);
     }
 }
