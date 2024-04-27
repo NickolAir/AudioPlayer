@@ -2,6 +2,7 @@ package com.example.audioplayer;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Intent;
 import android.media.AudioAttributes;
 import android.media.MediaPlayer;
 import android.os.Build;
@@ -77,7 +78,19 @@ public class PlayerActivity extends AppCompatActivity {
             }
         });
 
-        musicAdapter = new MusicAdapter(playlist);
+        musicAdapter = new MusicAdapter(playlist, new MusicAdapter.Action() {
+            @Override
+            public void onItemClicked(Music music) {
+                Intent intent = new Intent(PlayerActivity.this, PlayerActivity.class);
+                intent.putExtra("title", music.getTitle());
+                intent.putExtra("album", music.getAlbum());
+                intent.putExtra("artist", music.getArtist());
+                intent.putExtra("path", music.getPath());
+                intent.putExtra("duration", music.getDuration());
+                intent.putExtra("position", music.getPosition());
+                startActivity(intent);
+            }
+        });
         loadMusic();
     }
 

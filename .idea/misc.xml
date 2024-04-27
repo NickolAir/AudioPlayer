@@ -1,16 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="../../../../layout/custom_preview.xml" value="0.3212962962962963" />
         <entry key="app/src/main/res/drawable-v24/ic_baseline_play_circle_outline_24.xml" value="0.2145" />
+        <entry key="app/src/main/res/drawable/details_view.xml" value="0.1" />
+        <entry key="app/src/main/res/drawable/gradient_background.xml" value="0.1735" />
         <entry key="app/src/main/res/drawable/ic_launcher_background.xml" value="0.2575" />
+        <entry key="app/src/main/res/drawable/section_header.xml" value="0.1945" />
+        <entry key="app/src/main/res/layout/activity_check.xml" value="0.1838768115942029" />
         <entry key="app/src/main/res/layout/activity_client.xml" value="0.20652173913043478" />
         <entry key="app/src/main/res/layout/activity_main.xml" value="0.20652173913043478" />
         <entry key="app/src/main/res/layout/activity_main_drawer.xml" value="0.2509613037109375" />
         <entry key="app/src/main/res/layout/activity_player.xml" value="0.20652173913043478" />
         <entry key="app/src/main/res/layout/activity_server.xml" value="0.20652173913043478" />
-        <entry key="app/src/main/res/layout/item_song.xml" value="0.1838768115942029" />
+        <entry key="app/src/main/res/layout/device_detail.xml" value="0.23369565217391305" />
+        <entry key="app/src/main/res/layout/device_list.xml" value="0.23369565217391305" />
+        <entry key="app/src/main/res/layout/item_song.xml" value="0.30049668464107787" />
+        <entry key="app/src/main/res/layout/mainp2p.xml" value="0.14739583333333334" />
         <entry key="app/src/main/res/layout/nav_header.xml" value="0.2842994800512342" />
+        <entry key="app/src/main/res/layout/row_devices.xml" value="0.1838768115942029" />
+        <entry key="app/src/main/res/menu/action_items.xml" value="0.30520833333333336" />
         <entry key="app/src/main/res/menu/main_menu.xml" value="0.30520833333333336" />
       </map>
     </option>

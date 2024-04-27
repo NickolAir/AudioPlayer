@@ -8,7 +8,7 @@ import java.net.InetAddress;
 
 public class IpResolveListener implements NsdManager.ResolveListener{
 
-    private String IP;
+    String IP;
 
     private NsdDiscovery nsdDiscovery;
 
@@ -26,10 +26,11 @@ public class IpResolveListener implements NsdManager.ResolveListener{
     public void onServiceResolved(NsdServiceInfo serviceInfo) {
         // Получение IP-адреса сервиса
         Log.d("IPSUCC", serviceInfo.getServiceName());
+        System.out.println(serviceInfo.getServiceName());
         InetAddress address = serviceInfo.getHost();
         IP = address.getHostAddress();
-        System.out.println("IP ADDRESS SERVER " + IP);
         String hostName = serviceInfo.getServiceName();
         nsdDiscovery.handleIpAddress(hostName, IP);
+        System.out.println("SERVER IP " + IP);
     }
 }

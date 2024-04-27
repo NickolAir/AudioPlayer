@@ -17,12 +17,20 @@ import com.bumptech.glide.Glide;
 import java.util.ArrayList;
 import java.util.List;
 
+import retrofit2.Call;
+
 public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicHolder> {
 
-    List<Music> list;
+    public interface Action {
+        void onItemClicked(Music music);
+    }
 
-    public MusicAdapter(List<Music> list) {
+    private List<Music> list;
+    private Action action;
+
+    public MusicAdapter(List<Music> list, Action action) {
         this.list = list;
+        this.action = action;
     }
 
     @NonNull
@@ -41,21 +49,33 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicHolder>
 
         Glide.with(holder.itemView.getContext())
                 .load(music.getAlbum())
-                .error(R.drawable.ic_song)
-                .placeholder(R.drawable.ic_song)
+                .error(R.drawable.smoothie)
+                .placeholder(R.drawable.smoothie)
                 .into(holder.icon);
 
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(holder.itemView.getContext(), PlayerActivity.class);
-                intent.putExtra("title", music.getTitle());
-                intent.putExtra("album", music.getAlbum());
-                intent.putExtra("artist", music.getArtist());
-                intent.putExtra("path", music.getPath());
-                intent.putExtra("duration", music.getDuration());
-                intent.putExtra("position", music.getPosition());
-                holder.itemView.getContext().startActivity(intent);
+                action.onItemClicked(music);
+                /*if (flag.equals("play")) {
+                    Intent intent = new Intent(holder.itemView.getContext(), PlayerActivity.class);
+                    intent.putExtra("title", music.getTitle());
+                    intent.putExtra("album", music.getAlbum());
+                    intent.putExtra("artist", music.getArtist());
+                    intent.putExtra("path", music.getPath());
+                    intent.putExtra("duration", music.getDuration());
+                    intent.putExtra("position", music.getPosition());
+                    holder.itemView.getContext().startActivity(intent);
+                } else {
+                    Intent intent = new Intent(holder.itemView.getContext(), CheckActivity.class);
+                    intent.putExtra("title", music.getTitle());
+                    intent.putExtra("album", music.getAlbum());
+                    intent.putExtra("artist", music.getArtist());
+                    intent.putExtra("path", music.getPath());
+                    intent.putExtra("duration", music.getDuration());
+                    intent.putExtra("position", music.getPosition());
+                    holder.itemView.getContext().startActivity(intent);
+                }*/
             }
         });
     }

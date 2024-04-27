@@ -1,10 +1,17 @@
 package com.example.audioplayer;
 
+import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.nsd.NsdManager;
 import android.net.nsd.NsdServiceInfo;
+import android.nfc.Tag;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.Telephony;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -12,6 +19,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.RecyclerView;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.*;
 import java.net.*;
@@ -19,40 +30,169 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-public class PartyServer extends AppCompatActivity implements View.OnClickListener {
+public class PartyServer extends AppCompatActivity {
 
     private static final String SERVICE_TYPE = "_http._tcp.";
     private NsdManager nsdManager;
+    private NsdManager.ResolveListener resolveListener;
     private ServerSocket serverSocket;
-    private Socket tempClientSocket;
     private Thread serverThread = null;
-    public static final int SERVER_PORT = 7777;
-    private LinearLayout msgList;
-    private Handler handler;
-    private EditText edMessage;
+    public static final int SERVER_PORT = 49999;
+    private ExecutorService executorService;
 
-    List<Music> playlist = new ArrayList<>();
+    List<NsdServiceInfo> mDiscoveredServices;
+    List<Music> playlist = new ArrayList<Music>();
+    List<Socket> clientSockets = new ArrayList<Socket>();
     MusicAdapter musicAdapter;
+    RecyclerView recyclerView;
 
-    @Override
+    @Override 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_server);
-        setTitle("Server");
-
-        handler = new Handler();
-        msgList = findViewById(R.id.msgList);
-        edMessage = findViewById(R.id.edMessage);
 
         nsdManager = (NsdManager) getSystemService(Context.NSD_SERVICE);
 
-        //initializeServerSocket();
+        executorService = Executors.newCachedThreadPool();
+        mDiscoveredServices = new ArrayList<NsdServiceInfo>();
+
+        resolveListener = new NsdManager.ResolveListener() {
+            @Override
+            public void onResolveFailed(NsdServiceInfo serviceInfo, int errorCode) {
+                System.out.println("Resolve failed for service: " + serviceInfo.getServiceName() +
+                        " with error code: " + errorCode);
+            }
+
+            @Override
+            public void onServiceResolved(NsdServiceInfo serviceInfo) {
+                // Обработка успешного разрешения (определения адреса) сервиса
+                System.out.println("Service resolved: " + serviceInfo.getServiceName());
+                if (!serviceInfo.getServiceType().equals(SERVICE_TYPE)) {
+                    Log.d("SERVICE_TYPE", serviceInfo.getServiceType());
+                } else if (serviceInfo.getServiceName().equals("Server")) {
+                    Log.d("Our device", serviceInfo.getServiceName());
+                } else {
+                    mDiscoveredServices.add(serviceInfo);
+                }
+            }
+        };
+
         registerService();
 
-        musicAdapter = new MusicAdapter(playlist);
+        startDiscovery();
+
+        serverThread = new Thread(new ServerThread());
+        serverThread.start();
+
+        recyclerView = findViewById(R.id.recycler_songs);
+        musicAdapter = new MusicAdapter(playlist, new MusicAdapter.Action() {
+            @Override
+            public void onItemClicked(Music music) {
+                if (mDiscoveredServices.isEmpty()) {
+                    System.out.println("Empty");
+                }
+                for (Socket clientSocket : clientSockets) {
+                    sendSongToClient(music, clientSocket);
+                    System.out.println("sent to " + clientSocket.getInetAddress().getHostAddress());
+                }
+            }
+        });
+        recyclerView.setAdapter(musicAdapter);
         loadMusic();
+    }
+
+    private void startDiscovery() {
+        NsdManager.DiscoveryListener mdiscoveryListener = new NsdManager.DiscoveryListener() {
+            @Override
+            public void onStartDiscoveryFailed(String serviceType, int errorCode) {
+                // Обработка ошибки при начале обнаружения сервисов
+                Toast.makeText(PartyServer.this, "Start discovery failed with error code: " + errorCode, Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onStopDiscoveryFailed(String serviceType, int errorCode) {
+                // Обработка ошибки при завершении обнаружения сервисов
+                Toast.makeText(PartyServer.this, "Stop discovery failed with error code: " + errorCode, Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onDiscoveryStarted(String serviceType) {
+                // Обработка начала обнаружения сервисов
+                Toast.makeText(PartyServer.this, "Discovery started for service type: " + serviceType, Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onDiscoveryStopped(String serviceType) {
+                // Обработка завершения обнаружения сервисов
+                Toast.makeText(PartyServer.this, "Discovery stopped for service type: " + serviceType, Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onServiceFound(NsdServiceInfo serviceInfo) {
+                // Обработка обнаруженного сервиса
+                System.out.println("Discovery " + serviceInfo.getServiceName());
+                if (serviceInfo.getServiceType().equals(SERVICE_TYPE)) {
+                    nsdManager.resolveService(serviceInfo, resolveListener);
+                }
+            }
+
+            @Override
+            public void onServiceLost(NsdServiceInfo serviceInfo) {
+                // Обработка потери сервиса
+                Toast.makeText(PartyServer.this, "Service lost: " + serviceInfo.getServiceName(), Toast.LENGTH_SHORT).show();
+            }
+        };
+        nsdManager.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, mdiscoveryListener);
+    }
+
+    private void addCompositionsToDatabase(List<Music> playlist) {
+        DBHelper dbHelper = new DBHelper(this);
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+        for (Music music : playlist) {
+            File track = new File(music.getPath());
+
+            // Проверяем, существует ли уже запись с таким названием и хэшем в базе данных
+            if (!isCompositionExists(db, music.getTitle(), HashUtils.calculateSHA256ForFile(track))) {
+                addComposition(db, music.getTitle(), HashUtils.calculateSHA256ForFile(track));
+            }
+        }
+
+        db.close();
+    }
+
+    // Метод добавления композиции в базу данных
+    private void addComposition(SQLiteDatabase db, String name, String hash) {
+        ContentValues values = new ContentValues();
+        values.put(DBHelper.COLUMN_NAME, name);
+        values.put(DBHelper.COLUMN_HASH, hash);
+
+        // Вставка записи в таблицу
+        long newRowId = db.insert(DBHelper.TABLE_COMPOSITIONS, null, values);
+
+        // Проверка добавления
+        if (newRowId != -1) {
+            System.out.println("success");
+        } else {
+            System.out.println("error");
+        }
+    }
+
+    // Метод проверки существования записи в базе данных
+    private boolean isCompositionExists(SQLiteDatabase db, String name, String hash) {
+        String[] columns = {DBHelper.COLUMN_NAME, DBHelper.COLUMN_HASH};
+        String selection = DBHelper.COLUMN_NAME + " = ? AND " + DBHelper.COLUMN_HASH + " = ?";
+        String[] selectionArgs = {name, hash};
+        Cursor cursor = db.query(DBHelper.TABLE_COMPOSITIONS, columns, selection, selectionArgs, null, null, null);
+        boolean exists = cursor.getCount() > 0;
+        cursor.close();
+        return exists;
     }
 
     private void loadMusic() {
@@ -60,13 +200,34 @@ public class PartyServer extends AppCompatActivity implements View.OnClickListen
         musicAdapter.notifyDataSetChanged();
         playlist.addAll(Helper.allMusic);
         musicAdapter.notifyDataSetChanged();
+        //addCompositionsToDatabase(playlist);
     }
 
-    private void initializeServerSocket() {
-        try {
-            serverSocket = new ServerSocket(SERVER_PORT);
-        } catch (IOException e) {
-            e.printStackTrace();
+    class ServerThread implements Runnable {
+
+        public void run() {
+            Socket socket;
+            try {
+                serverSocket = new ServerSocket(SERVER_PORT);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            if (serverSocket != null) {
+                while (!Thread.currentThread().isInterrupted()) {
+                    try {
+                        socket = serverSocket.accept();
+                        System.out.println("connected");
+                        if (socket != null) {
+                            clientSockets.add(socket);
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                if (!Thread.currentThread().isInterrupted()) {
+                    System.out.println("thread interrupted");
+                }
+            }
         }
     }
 
@@ -108,135 +269,42 @@ public class PartyServer extends AppCompatActivity implements View.OnClickListen
                 });
     }
 
-    public TextView createTextView(String message) {
-        if (message == null || message.trim().isEmpty()) {
-            message = "<Empty Message>";
-        }
-
-        TextView tv = new TextView(this);
-        tv.setText(message + " [" + getTime() + "]");
-        tv.setTextSize(20);
-        tv.setPadding(0, 5, 0, 0);
-        return tv;
-    }
-
-    public void showMessage(final String message, final int color) {
-        handler.post(new Runnable() {
+    // Метод для отправки песни клиенту
+    private void sendSongToClient(Music music, Socket clientSocket) {
+        executorService.execute(new Runnable() { // Используем пул потоков для обработки каждого подключения
             @Override
             public void run() {
-                msgList.addView(createTextView(message));
-            }
-        });
-    }
-
-    @Override
-    public void onClick(View view) {
-        if (view.getId() == R.id.start_server) {
-            msgList.removeAllViews();
-            showMessage("Server Started.", getColor(R.color.black));
-            serverThread = new Thread(new ServerThread());
-            serverThread.start();
-        } else if (view.getId() == R.id.send_data) {
-            String msg = edMessage.getText().toString().trim();
-            showMessage("Server : " + msg, getColor(R.color.black));
-            sendMessage(msg);
-        }
-    }
-
-    private void sendMessage(final String message) {
-        try {
-            if (tempClientSocket != null) {
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            PrintWriter out = new PrintWriter(new BufferedWriter(
-                                    new OutputStreamWriter(tempClientSocket.getOutputStream())),
-                                    true);
-                            out.println(message);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }).start();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    class ServerThread implements Runnable {
-
-        public void run() {
-            Socket socket;
-            try {
-                serverSocket = new ServerSocket(SERVER_PORT);
-                findViewById(R.id.start_server);
-            } catch (IOException e) {
-                e.printStackTrace();
-                showMessage("Error Starting Server : " + e.getMessage(), getColor(R.color.red));
-            }
-
-            if (serverSocket != null) {
-                while (!Thread.currentThread().isInterrupted()) {
-                    try {
-                        socket = serverSocket.accept();
-                        CommunicationThread commThread = new CommunicationThread(socket);
-                        new Thread(commThread).start();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        showMessage("Error Communicating to Client : " + e.getMessage(), getColor(R.color.red));
-                    }
-                }
-            }
-        }
-    }
-
-    class CommunicationThread implements Runnable {
-
-        private Socket clientSocket;
-        private BufferedReader input;
-
-        public CommunicationThread(Socket clientSocket) {
-            this.clientSocket = clientSocket;
-            tempClientSocket = clientSocket;
-            try {
-                this.input = new BufferedReader(new InputStreamReader(this.clientSocket.getInputStream()));
-            } catch (IOException e) {
-                e.printStackTrace();
-                showMessage("Error Connecting to Client!!", getColor(R.color.red));
-            }
-            showMessage("Connected to Client!!", getColor(R.color.black));
-        }
-
-        public void run() {
-            while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    String read = input.readLine();
-                    if (read == null || "Disconnect".contentEquals(read)) {
-                        Thread.interrupted();
-                        read = "Client Disconnected";
-                        showMessage("Client : " + read, getColor(R.color.black));
-                        break;
+                    if (clientSocket != null) {
+                        // Отправляем имя композиции на клиент
+                        PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+                        out.println(music.getTitle());
+
+                        // Открываем поток для отправки файла на клиент
+                        BufferedOutputStream bos = new BufferedOutputStream(clientSocket.getOutputStream());
+                        FileInputStream fis = new FileInputStream(new File(music.getPath()));
+                        byte[] buffer = new byte[1024*4];
+                        int bytesRead;
+                        while ((bytesRead = fis.read(buffer)) != -1) {
+                            bos.write(buffer, 0, bytesRead);
+                        }
+
+                        // Закрываем потоки
+                        fis.close();
+                        bos.close();
+                        Toast.makeText(PartyServer.this, "File sent", Toast.LENGTH_SHORT).show();
                     }
-                    showMessage("Client : " + read, getColor(R.color.black));
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
-        }
-    }
-
-    String getTime() {
-        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
-        return sdf.format(new Date());
+        });
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         if (serverThread != null) {
-            sendMessage("Disconnect");
             serverThread.interrupt();
             serverThread = null;
         }

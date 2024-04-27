@@ -43,11 +43,23 @@ public class MainActivity extends AppCompatActivity {
         if (isPermission()) {
             loadPlaylist();
         } else {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 12);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, 12);
         }
 
         recyclerView = findViewById(R.id.recycler_songs);
-        musicAdapter = new MusicAdapter(list);
+        musicAdapter = new MusicAdapter(list, new MusicAdapter.Action() {
+            @Override
+            public void onItemClicked(Music music) {
+                Intent intent = new Intent(MainActivity.this, PlayerActivity.class);
+                intent.putExtra("title", music.getTitle());
+                intent.putExtra("album", music.getAlbum());
+                intent.putExtra("artist", music.getArtist());
+                intent.putExtra("path", music.getPath());
+                intent.putExtra("duration", music.getDuration());
+                intent.putExtra("position", music.getPosition());
+                startActivity(intent);
+            }
+        });
         recyclerView.setAdapter(musicAdapter);
 
         loadMusic();
