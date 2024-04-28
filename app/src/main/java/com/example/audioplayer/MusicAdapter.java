@@ -57,25 +57,6 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicHolder>
             @Override
             public void onClick(View view) {
                 action.onItemClicked(music);
-                /*if (flag.equals("play")) {
-                    Intent intent = new Intent(holder.itemView.getContext(), PlayerActivity.class);
-                    intent.putExtra("title", music.getTitle());
-                    intent.putExtra("album", music.getAlbum());
-                    intent.putExtra("artist", music.getArtist());
-                    intent.putExtra("path", music.getPath());
-                    intent.putExtra("duration", music.getDuration());
-                    intent.putExtra("position", music.getPosition());
-                    holder.itemView.getContext().startActivity(intent);
-                } else {
-                    Intent intent = new Intent(holder.itemView.getContext(), CheckActivity.class);
-                    intent.putExtra("title", music.getTitle());
-                    intent.putExtra("album", music.getAlbum());
-                    intent.putExtra("artist", music.getArtist());
-                    intent.putExtra("path", music.getPath());
-                    intent.putExtra("duration", music.getDuration());
-                    intent.putExtra("position", music.getPosition());
-                    holder.itemView.getContext().startActivity(intent);
-                }*/
             }
         });
     }

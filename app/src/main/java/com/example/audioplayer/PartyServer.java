@@ -39,11 +39,12 @@ import java.util.concurrent.Executors;
 public class PartyServer extends AppCompatActivity {
 
     private static final String SERVICE_TYPE = "_http._tcp.";
+    public static int SERVER_PORT;
     private NsdManager nsdManager;
     private NsdManager.ResolveListener resolveListener;
     private ServerSocket serverSocket;
     private Thread serverThread = null;
-    public static final int SERVER_PORT = 49999;
+
     private ExecutorService executorService;
 
     List<NsdServiceInfo> mDiscoveredServices;
@@ -61,6 +62,16 @@ public class PartyServer extends AppCompatActivity {
 
         executorService = Executors.newCachedThreadPool();
         mDiscoveredServices = new ArrayList<NsdServiceInfo>();
+
+        serverThread = new Thread(new ServerThread());
+        serverThread.start();
+        System.out.println("2) server port " + SERVER_PORT);
+
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         resolveListener = new NsdManager.ResolveListener() {
             @Override
@@ -86,9 +97,6 @@ public class PartyServer extends AppCompatActivity {
         registerService();
 
         startDiscovery();
-
-        serverThread = new Thread(new ServerThread());
-        serverThread.start();
 
         recyclerView = findViewById(R.id.recycler_songs);
         musicAdapter = new MusicAdapter(playlist, new MusicAdapter.Action() {
@@ -137,7 +145,7 @@ public class PartyServer extends AppCompatActivity {
             public void onServiceFound(NsdServiceInfo serviceInfo) {
                 // Обработка обнаруженного сервиса
                 System.out.println("Discovery " + serviceInfo.getServiceName());
-                if (serviceInfo.getServiceType().equals(SERVICE_TYPE)) {
+                if (!serviceInfo.getServiceName().equals("Server")) {
                     nsdManager.resolveService(serviceInfo, resolveListener);
                 }
             }
@@ -208,10 +216,13 @@ public class PartyServer extends AppCompatActivity {
         public void run() {
             Socket socket;
             try {
-                serverSocket = new ServerSocket(SERVER_PORT);
+                serverSocket = new ServerSocket(0);
+                SERVER_PORT = serverSocket.getLocalPort();
+                System.out.println("1) server port " + SERVER_PORT);
             } catch (IOException e) {
                 e.printStackTrace();
             }
+
             if (serverSocket != null) {
                 while (!Thread.currentThread().isInterrupted()) {
                     try {
@@ -224,14 +235,12 @@ public class PartyServer extends AppCompatActivity {
                         e.printStackTrace();
                     }
                 }
-                if (!Thread.currentThread().isInterrupted()) {
-                    System.out.println("thread interrupted");
-                }
             }
         }
     }
 
     private void registerService() {
+        System.out.println("3) server port " + SERVER_PORT);
         NsdServiceInfo serviceInfo = new NsdServiceInfo();
         serviceInfo.setServiceType(SERVICE_TYPE);
         serviceInfo.setServiceName("Server");
@@ -292,7 +301,6 @@ public class PartyServer extends AppCompatActivity {
                         // Закрываем потоки
                         fis.close();
                         bos.close();
-                        Toast.makeText(PartyServer.this, "File sent", Toast.LENGTH_SHORT).show();
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -307,6 +315,13 @@ public class PartyServer extends AppCompatActivity {
         if (serverThread != null) {
             serverThread.interrupt();
             serverThread = null;
+        }
+        if (serverSocket != null) {
+            try {
+                serverSocket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
         //nsdManager.unregisterService(null);
     }

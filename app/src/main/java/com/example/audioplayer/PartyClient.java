@@ -3,6 +3,7 @@ package com.example.audioplayer;
 import android.Manifest;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -46,8 +47,7 @@ import java.util.List;
 
 public class PartyClient extends AppCompatActivity {
 
-    public static final int SERVERPORT = 49999;
-
+    public static int SERVERPORT;
     private static final String SERVICE_TYPE = "_http._tcp.";
     private NsdDiscovery nsdDiscovery;
     private NsdManager nsdManager;
@@ -58,8 +58,6 @@ public class PartyClient extends AppCompatActivity {
     private String SERVER_IP;
     private ClientThread clientThread;
     private Thread thread;
-
-    List<Music> playlist = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,22 +82,10 @@ public class PartyClient extends AppCompatActivity {
                 }
                 System.out.println("Service resolved: " + serviceInfo.getServiceName());
                 discoveredService = serviceInfo;
+                SERVERPORT = serviceInfo.getPort();
                 connectToServer();
             }
         };
-    }
-
-    private boolean isPermission() {
-        if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
     private void addCompositionsToDatabase(List<Music> playlist) {
@@ -146,13 +132,13 @@ public class PartyClient extends AppCompatActivity {
         return exists;
     }
 
-   /* @Override
+    @Override
     protected void onPause() {
         super.onPause();
         if (discoveredService != null) {
             nsdManager.stopServiceDiscovery(discoveryListener);
         }
-    }*/
+    }
 
     @Override
     protected void onResume() {
@@ -189,14 +175,16 @@ public class PartyClient extends AppCompatActivity {
             @Override
             public void onServiceFound(NsdServiceInfo serviceInfo) {
                 // Обработка обнаруженного сервиса
-                if (serviceInfo.getServiceType().equals(SERVICE_TYPE)) {
-                    nsdManager.resolveService(serviceInfo, resolveListener);
-                }
+                System.out.println(serviceInfo.getServiceType());
 
                 try {
                     Thread.sleep(50);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
+                }
+
+                if (serviceInfo.getServiceType().equals(SERVICE_TYPE)) {
+                    nsdManager.resolveService(serviceInfo, resolveListener);
                 }
             }
 
@@ -232,11 +220,12 @@ public class PartyClient extends AppCompatActivity {
                 String filename = reader.readLine();
                 System.out.println(filename);
 
-                // Получение каталога загрузок
-                File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-                if (downloadsDir != null) {
-                    // Формируем путь для сохранения файла в папке загрузок
-                    File outputFile = new File(downloadsDir, filename);
+                // Получение каталога для записи файла во внешнем хранилище приложения
+                File externalStorageDir = getExternalFilesDir(null);
+                if (externalStorageDir != null) {
+                    // Формируем путь для сохранения файла
+                    File outputFile = new File(externalStorageDir, filename);
+                    System.out.println(outputFile);
 
                     // Получение файла
                     BufferedInputStream fileReader = new BufferedInputStream(socket.getInputStream());
@@ -247,11 +236,22 @@ public class PartyClient extends AppCompatActivity {
                         fileOutputStream.write(buffer, 0, bytesRead);
                     }
 
-                    System.out.println("File received" + filename);
+                    System.out.println("File received " + filename);
                     fileOutputStream.close();
                     fileReader.close();
+
+                    Music music = new Music(filename, "", "", outputFile.getPath(), "", 0);
+
+                    Intent intent = new Intent(PartyClient.this, PlayerActivity.class);
+                    intent.putExtra("title", music.getTitle());
+                    intent.putExtra("album", music.getAlbum());
+                    intent.putExtra("artist", music.getArtist());
+                    intent.putExtra("path", music.getPath());
+                    intent.putExtra("duration", music.getDuration());
+                    intent.putExtra("position", music.getPosition());
+                    startActivity(intent);
                 } else {
-                    System.out.println("Downloads directory is null");
+                    System.out.println("External storage directory is null");
                 }
             } catch (IOException e) {
                 e.printStackTrace();

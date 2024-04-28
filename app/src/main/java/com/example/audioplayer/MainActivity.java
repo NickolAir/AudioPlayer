@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
         if (isPermission()) {
             loadPlaylist();
         } else {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, 12);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 12);
         }
 
         recyclerView = findViewById(R.id.recycler_songs);
@@ -68,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private boolean isPermission() {
-        if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+        if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
             return true;
         } else {
             return false;
