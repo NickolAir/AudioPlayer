@@ -12,6 +12,7 @@
         <!-- Status bar color. -->
         <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
         <!-- Customize your theme here. -->
+        <item name="android:windowBackground">@color/black</item>
     </style>
 
     <style name="AppTheme" parent="ThemeOverlay.AppCompat.Light">
@@ -22,5 +23,9 @@
         <item name="android:textColorSecondary">@color/gray</item>
         <item name="android:colorBackground">@color/black</item>
         <item name="popupMenuStyle">@style/ThemeOverlay.AppCompat.Light</item>
+    </style>
+
+    <style name="CircularProgress" parent="Theme.AppCompat.Light">
+        <item name="colorAccent">#40C4FF</item>
     </style>
 </resources>

@@ -16,6 +16,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -59,10 +60,14 @@ public class PartyClient extends AppCompatActivity {
     private ClientThread clientThread;
     private Thread thread;
 
+    ProgressBar progressBar;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_client);
+
+        progressBar = findViewById(R.id.pb);
 
         nsdManager = (NsdManager) getSystemService(Context.NSD_SERVICE);
 
@@ -83,6 +88,7 @@ public class PartyClient extends AppCompatActivity {
                 System.out.println("Service resolved: " + serviceInfo.getServiceName());
                 discoveredService = serviceInfo;
                 SERVERPORT = serviceInfo.getPort();
+                progressBar.setVisibility(View.VISIBLE);
                 connectToServer();
             }
         };

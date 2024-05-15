@@ -301,6 +301,15 @@ public class PartyServer extends AppCompatActivity {
                         // Закрываем потоки
                         fis.close();
                         bos.close();
+
+                        Intent intent = new Intent(PartyServer.this, PlayerActivity.class);
+                        intent.putExtra("title", music.getTitle());
+                        intent.putExtra("album", music.getAlbum());
+                        intent.putExtra("artist", music.getArtist());
+                        intent.putExtra("path", music.getPath());
+                        intent.putExtra("duration", music.getDuration());
+                        intent.putExtra("position", music.getPosition());
+                        startActivity(intent);
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
