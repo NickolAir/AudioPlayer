@@ -1,56 +1,32 @@
 package com.example.audioplayer;
 
-import android.Manifest;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.nsd.NsdManager;
 import android.net.nsd.NsdServiceInfo;
 import android.os.Bundle;
-import android.os.Environment;
-import android.os.Handler;
-import android.util.Log;
 import android.view.View;
-import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.ProgressBar;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.RecyclerView;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.net.InetAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 public class PartyClient extends AppCompatActivity {
 
     public static int SERVERPORT;
     private static final String SERVICE_TYPE = "_http._tcp.";
-    private NsdDiscovery nsdDiscovery;
     private NsdManager nsdManager;
     private NsdManager.ResolveListener resolveListener;
     private NsdServiceInfo discoveredService;

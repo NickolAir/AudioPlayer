@@ -7,32 +7,22 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.nsd.NsdManager;
 import android.net.nsd.NsdServiceInfo;
-import android.nfc.Tag;
 import android.os.Bundle;
-import android.os.Handler;
-import android.provider.Telephony;
 import android.util.Log;
-import android.view.View;
-import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.*;
-import java.net.*;
-import java.text.SimpleDateFormat;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 

@@ -21,7 +21,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:id="@+id/toolbar"
-                style="@style/MyToolBar" />
+                android:background="#FD5270" />
             
         </com.google.android.material.appbar.AppBarLayout>
 
