@@ -27,6 +27,7 @@ public class PartyClient extends AppCompatActivity {
 
     public static int SERVERPORT;
     private static final String SERVICE_TYPE = "_http._tcp.";
+    private NsdDiscovery nsdDiscovery;
     private NsdManager nsdManager;
     private NsdManager.ResolveListener resolveListener;
     private NsdServiceInfo discoveredService;
@@ -117,9 +118,9 @@ public class PartyClient extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        if (discoveredService != null) {
+        /*if (discoveredService != null) {
             nsdManager.stopServiceDiscovery(discoveryListener);
-        }
+        }*/
     }
 
     @Override
@@ -201,6 +202,8 @@ public class PartyClient extends AppCompatActivity {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 String filename = reader.readLine();
                 System.out.println(filename);
+                long startTime = Long.parseLong(reader.readLine());
+                System.out.println("Start time received: " + startTime);
 
                 // Получение каталога для записи файла во внешнем хранилище приложения
                 File externalStorageDir = getExternalFilesDir(null);
@@ -217,12 +220,24 @@ public class PartyClient extends AppCompatActivity {
                     while ((bytesRead = fileReader.read(buffer)) != -1) {
                         fileOutputStream.write(buffer, 0, bytesRead);
                     }
-
                     System.out.println("File received " + filename);
                     fileOutputStream.close();
                     fileReader.close();
 
                     Music music = new Music(filename, "", "", outputFile.getPath(), "", 0);
+
+                    // Рассчитываем задержку до начала воспроизведения
+                    long currentTime = System.currentTimeMillis();
+                    System.out.println("Current time: " + currentTime);
+                    long delay = startTime - currentTime;
+                    System.out.println("Delay: " + delay);
+                    if (delay > 0) {
+                        try {
+                            Thread.sleep(delay);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
 
                     Intent intent = new Intent(PartyClient.this, PlayerActivity.class);
                     intent.putExtra("title", music.getTitle());

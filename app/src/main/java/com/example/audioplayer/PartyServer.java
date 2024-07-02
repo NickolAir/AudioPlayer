@@ -43,7 +43,7 @@ public class PartyServer extends AppCompatActivity {
     MusicAdapter musicAdapter;
     RecyclerView recyclerView;
 
-    @Override 
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_server);
@@ -278,6 +278,9 @@ public class PartyServer extends AppCompatActivity {
                         // Отправляем имя композиции на клиент
                         PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
                         out.println(music.getTitle());
+                        long startTime = System.currentTimeMillis() + 5000; // задержка
+                        out.println(startTime);
+                        System.out.println("Start time sent: " + startTime);
 
                         // Открываем поток для отправки файла на клиент
                         BufferedOutputStream bos = new BufferedOutputStream(clientSocket.getOutputStream());
@@ -287,10 +290,18 @@ public class PartyServer extends AppCompatActivity {
                         while ((bytesRead = fis.read(buffer)) != -1) {
                             bos.write(buffer, 0, bytesRead);
                         }
-
                         // Закрываем потоки
                         fis.close();
                         bos.close();
+
+                        long delay = startTime - System.currentTimeMillis();
+                        if (delay > 0) {
+                            try {
+                                Thread.sleep(delay);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
 
                         Intent intent = new Intent(PartyServer.this, PlayerActivity.class);
                         intent.putExtra("title", music.getTitle());
